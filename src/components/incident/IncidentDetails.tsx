@@ -47,6 +47,7 @@ import { AckedItem, OpenItem, TicketItem } from "./Chips";
 // Contexts/Hooks
 import { useAlerts } from "../alertsnackbar";
 import { useApiIncidentAcks, useApiIncidentEvents } from "../../api/hooks";
+import { Alert } from "@material-ui/lab";
 
 type IncidentDetailsListItemPropsType = {
   title: string;
@@ -145,6 +146,7 @@ const TicketModifiableField: React.FC<TicketModifiableFieldPropsType> = ({
 
   const [changeUrl, setChangeUrl] = useState<boolean>(false);
   const [url, setUrl] = useStateWithDynamicDefault<string | undefined>(urlProp);
+  const [invalidAbsoluteUrl, setInvalidAbsoluteUrl] = useState<boolean>(false);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(event.target.value);
@@ -153,11 +155,15 @@ const TicketModifiableField: React.FC<TicketModifiableFieldPropsType> = ({
 
   const handleSave = () => {
     // If url is empty string ("") store it as undefined.
-    if (url !== undefined && changeUrl) saveChange(url || undefined);
-    setChangeUrl(false);
-  };
+    if (url && changeUrl && !isValidUrl(url)) {
+      setInvalidAbsoluteUrl(true);
+    } else if (changeUrl) {
+      saveChange(url || undefined);
+      setInvalidAbsoluteUrl(false);
+      setChangeUrl(false);
+    }
 
-  const error = useMemo(() => !(url || !isValidUrl(url || "")), [url]);
+  };
 
   return (
     <ListItem>
@@ -166,13 +172,16 @@ const TicketModifiableField: React.FC<TicketModifiableFieldPropsType> = ({
           label="Ticket"
           defaultValue={url || ""}
           onChange={handleChange}
-          error={error}
-          helperText={error && "Invalid URL"}
+          error={invalidAbsoluteUrl}
+          helperText={invalidAbsoluteUrl && "Invalid absolute URL"}
         />
         {changeUrl && (
           <Button className={classes.safeButton} endIcon={<SaveIcon />} onClick={handleSave}>
             Save
           </Button>
+        )}
+        {changeUrl && (
+          <Alert severity="info">Leave this field empty in order to remove ticket urls from the selected incidents</Alert>
         )}
       </Grid>
     </ListItem>
